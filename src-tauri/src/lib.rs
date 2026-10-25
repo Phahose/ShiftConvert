@@ -3,6 +3,7 @@ use tauri::Manager;
 #[cfg(target_os = "windows")]
 mod gesture;
 mod converter;
+mod document_converter;
 
 // Default Tauri command
 #[tauri::command]
@@ -17,12 +18,23 @@ async fn convert_image(input_path: String,output_format: String,) -> Result<Stri
     .await
     .map_err(|e| e.to_string())?
 }
+#[tauri::command]
+async fn convert_document(
+    input_path: String,
+    output_format: String,
+) -> Result<String, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        document_converter::convert_document(input_path, output_format)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, convert_image])
+        .invoke_handler(tauri::generate_handler![greet, convert_image, convert_document])
 
         // Run this when Tauri initializes
         .setup(|app| {

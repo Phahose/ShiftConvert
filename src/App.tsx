@@ -6,21 +6,8 @@ import {PhysicalPosition} from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
 import { getFormatAtPosition } from "./utils/radial";
 import { invoke } from "@tauri-apps/api/core";
+import { conversionMap } from "./config/conversions";
 
-const conversionMap: Record<string, string[]> = {
-  png: ["JPG", "WEBP", "BMP", "GIF"],
-  jpg: ["PNG", "WEBP", "BMP", "GIF"],
-  jpeg: ["PNG", "WEBP", "BMP", "GIF"],
-
-  docx: ["PDF", "TXT", "HTML", "ODT"],
-  pdf: ["PNG", "JPG", "TXT"],
-
-  mp4: ["WEBM", "MOV", "GIF", "MP3"],
-  mp3: ["WAV", "OGG", "FLAC"],
-
-  csv: ["XLSX", "JSON", "TXT"],
-  xlsx: ["CSV", "PDF", "ODS"],
-};
 
 function App() {
   const [filePath, setFilePath] = useState<string | null>(null);
@@ -35,13 +22,9 @@ function App() {
     height: 420,
     scale: 1,
   });
-  const [cursorPosition, setCursorPosition] = useState<{
-  x: number;
-  y: number;
-  } | null>(null);
-  const formats = fileExtension
-  ? conversionMap[fileExtension] ?? []
-  : [];
+  const [cursorPosition, setCursorPosition] = useState<{ x: number; y: number; } | null>(null);
+
+  const formats = fileExtension ? conversionMap[fileExtension] ?? [] : [];
   const [isConverting, setIsConverting] = useState(false);
   const [conversionMessage, setConversionMessage] = useState("");
 
@@ -75,9 +58,8 @@ function App() {
 })();
  
 // Gesture detection event listeners.
-      useEffect(() => {
+    useEffect(() => {
       const appWindow = getCurrentWindow();
-
       let disposed = false;
       let unlistenStart: (() => void) | undefined;
       let unlistenEnd: (() => void) | undefined;
@@ -174,12 +156,6 @@ function App() {
       async function setupFileDragListener() {
         const cleanup = await getCurrentWebview().onDragDropEvent(
           async(event) => {
-            console.log("DRAG TYPE:", event.payload.type);
-            console.log(
-              "FULL PAYLOAD:",
-              JSON.stringify(event.payload)
-            );
-
             if (event.payload.type === "enter") {
               const paths = event.payload.paths;
 
@@ -233,19 +209,33 @@ function App() {
               setFileExtension(extension);
               setSelectedFormat(chosenFormat);
 
-              if (extension === "png" && chosenFormat === "JPG" )
+
+              if (chosenFormat && availableFormats.includes(chosenFormat)) 
               {
                 setIsConverting(true);
                 setConversionMessage("Converting PNG to JPG...");
 
                 try {
-                  const outputPath = await invoke<string>(
-                    "convert_image",
-                    {
+                  // Tauri command that calls the rust function to convert the image
+                  const imageExtensions = ["png", "jpg", "jpeg", "webp", "bmp"];
+
+                  let outputPath: string;
+
+                  if (imageExtensions.includes(extension)) {
+                    outputPath = await invoke<string>("convert_image", {
                       inputPath: path,
                       outputFormat: chosenFormat,
-                    }
-                  );
+                    });
+                  } else if (extension === "docx") {
+                    outputPath = await invoke<string>("convert_document", {
+                      inputPath: path,
+                      outputFormat: chosenFormat,
+                    });
+                  } else {
+                    throw new Error(`Unsupported file type: ${extension}`);
+                  }
+
+                  console.log("Converted file:", outputPath);
 
                   setConversionMessage(`Converted successfully: ${outputPath}`);
                   console.log("CONVERSION COMPLETE:", outputPath);
@@ -344,6 +334,7 @@ function App() {
             >
               {format}
             </button>
+            
           );
         })
       ) : (
@@ -362,6 +353,12 @@ function App() {
       {cursorPosition && (
         <div className="cursor-debug">
           X: {cursorPosition.x} | Y: {cursorPosition.y}
+        </div>
+      )}
+      {conversionMessage && (
+        <div className="conversion-result">
+          {isConverting ? "Working: " : ""}
+          {conversionMessage}
         </div>
       )}
     </main>
