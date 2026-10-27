@@ -5,7 +5,8 @@ export const conversionMap: Record<string, string[]> = {
   webp: ["PNG", "JPG", "BMP"],
   bmp: ["PNG", "JPG", "WEBP"],
 
-   docx: ["PDF"],
+   docx: ["PDF", "TXT"],
+   pdf: ["PNG", "JPG", "TXT"],
 };
 
 // const conversionMap: Record<string, string[]> = {

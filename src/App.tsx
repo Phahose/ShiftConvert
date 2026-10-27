@@ -75,7 +75,6 @@ function App() {
           "shift-drag-started",
           async (event) => {
           
-
             if (disposed) return;
 
             const [cursorX, cursorY] = event.payload;
@@ -172,11 +171,9 @@ function App() {
               setIsDragging(true);
               setSelectedFormat(null);
             }
-
             if (event.payload.type === "enter") {
               console.log("FILE ENTERED:", event.payload.paths);
             }
-
             if (event.payload.type === "drop") {
               const { paths, position } = event.payload;
 
@@ -188,8 +185,9 @@ function App() {
               const filename = path.split(/[\\/]/).pop() ?? "";
               const extension = filename.split(".").pop()?.toLowerCase() ?? "";
 
+              console.log("This is the extension:", extension);
               const availableFormats = conversionMap[extension] ?? [];
-
+              console.log("Available formats for this extension:", availableFormats);
               // Tauri's drag position is relative to the webview.
               const centerX = window.innerWidth / 2;
               const centerY = window.innerHeight / 2;
@@ -218,6 +216,7 @@ function App() {
                 try {
                   // Tauri command that calls the rust function to convert the image
                   const imageExtensions = ["png", "jpg", "jpeg", "webp", "bmp"];
+                  const documentExtensions = ["docx", "pdf"];
 
                   let outputPath: string;
 
@@ -226,7 +225,7 @@ function App() {
                       inputPath: path,
                       outputFormat: chosenFormat,
                     });
-                  } else if (extension === "docx") {
+                  } else if (documentExtensions.includes(extension)) {
                     outputPath = await invoke<string>("convert_document", {
                       inputPath: path,
                       outputFormat: chosenFormat,

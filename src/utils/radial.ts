@@ -17,6 +17,7 @@ export function getFormatAtPosition(
     const dx = mouseX - buttonX;
     const dy = mouseY - buttonY;
 
+    // Check if the mouse position is within the button's radius
     if (dx * dx + dy * dy <= buttonRadius * buttonRadius) {
       return formats[index];
     }

@@ -13,13 +13,26 @@ pub fn convert_document(
         return Err("Source document does not exist".into());
     }
 
+    // 2. Validate the source file extension and output format
     let extension = input.extension().and_then(|ext| ext.to_str()).ok_or("Invalid file extension")?;
 
-    if !extension.eq_ignore_ascii_case("docx") || !output_format.eq_ignore_ascii_case("pdf")
-    {
-        return Err("Only DOCX to PDF is supported currently".into());
-    }
+    // 3. Validate the source file extension and output format
+    let output_format = output_format.to_ascii_lowercase();
 
+    // 4. Determine the conversion filter based on the source and target formats
+    let conversion_filter = match (
+        extension.to_ascii_lowercase().as_str(),
+        output_format.as_str(),
+    ) {
+        ("docx", "pdf") => "pdf:writer_pdf_Export",
+        ("docx", "txt") => "txt:Text (encoded):UTF8",
+        ("txt", "pdf") => "pdf:writer_pdf_Export",
+        ("txt", "docx") => "docx:MS Word 2007 XML",
+
+        _ => return Err(
+            "This document conversion is not supported".into()
+        ),
+    };
     // 2. Find the source directory and filename
     let parent = input.parent().ok_or("Invalid source directory")?;
 
@@ -38,7 +51,7 @@ pub fn convert_document(
     )
     .arg("--headless")
     .arg("--convert-to")
-    .arg("pdf")
+    .arg(conversion_filter)
     .arg("--outdir")
     .arg(temp_dir.path())
     .arg(input)
@@ -52,11 +65,11 @@ pub fn convert_document(
         ));
     }
 
-    // 5. Locate the converted PDF
-    let converted = temp_dir.path().join(format!("{stem}.pdf"));
+    // 5. Locate the converted file
+    let converted = temp_dir.path().join(format!("{stem}.{output_format}"));
 
     if !converted.is_file() {
-        return Err("LibreOffice did not create a PDF".into());
+        return Err(format!("LibreOffice did not create a {}", output_format));
     }
 
     // 6. Choose a destination without replacing existing files
@@ -64,9 +77,9 @@ pub fn convert_document(
 
     let destination = loop {
         let filename = if counter == 0 {
-            format!("{stem}.pdf")
+            format!("{stem}.{output_format}")
         } else {
-            format!("{stem}_converted_{counter}.pdf")
+            format!("{stem}_converted_{counter}.{output_format}")
         };
 
         let candidate = parent.join(filename);
