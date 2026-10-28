@@ -97,17 +97,17 @@ function App() {
               const size = await appWindow.innerSize();
               const scale = await appWindow.scaleFactor();
 
-              setWindowGeometry({
-                x: position.x,
-                y: position.y,
-                width: size.width,
-                height: size.height,
-                scale,
-              });
+             setWindowGeometry({
+              x: position.x,
+              y: position.y,
+              width: size.width,
+              height: size.height,
+              scale,
+            });
             }
           }
         );
-
+        
         unlistenEnd = await listen(
           "shift-drag-ended",
           async () => {

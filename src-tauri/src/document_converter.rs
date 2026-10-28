@@ -39,7 +39,7 @@ pub fn convert_document(
     let stem = input
         .file_stem()
         .and_then(|name| name.to_str())
-        .ok_or("Invalid filename")?;
+        .ok_or("Invalid File Name")?;
 
     // 3. Create a temporary conversion directory
     let temp_dir = tempfile::tempdir_in(parent)
